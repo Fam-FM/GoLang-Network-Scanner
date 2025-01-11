@@ -1,0 +1,52 @@
+package main
+
+import (
+	"fmt"
+	"net"
+	"os"
+	"sync"
+	"time"
+)
+
+func scan(ip string, wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	addr, err := net.ResolveIPAddr("ip4", ip)
+	if err != nil {
+		fmt.Println("resolution error", err)
+		return
+	}
+
+	conn, err := net.DialTimeout("tcp", addr.String()+":80", 2*time.Second)
+	if err != nil {
+		// Port is closed or host is unreachable
+		// fmt.Println("port closed or host unreachable:", err)
+		return
+	}
+	defer conn.Close()
+
+	fmt.Println(ip, "is reachable")
+}
+
+func main() {
+	if len(os.Args) != 2 {
+		fmt.Println("Usage: go run main.go <ip_range>")
+		return
+	}
+
+	ipRange := os.Args[1]
+
+	// Create a wait group to wait for all goroutines to finish
+	var wg sync.WaitGroup
+
+	// Generate IP addresses from the given range (replace with your logic)
+	for i := 1; i <= 255; i++ {
+		ip := fmt.Sprintf("%s.%d", ipRange, i)
+		wg.Add(1)
+		go scan(ip, &wg)
+	}
+
+	// Wait for all goroutines to finish
+	wg.Wait()
+}
+
